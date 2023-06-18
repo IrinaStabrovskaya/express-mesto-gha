@@ -6,17 +6,18 @@ const getUsers = (req, res) => User.find({})
   .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
 
 // запрос пользователя по id
-const getUserById = (req, res) => User.findById(req.user._id)
-  .then((userData) => {
-    if (!userData) {
-      return res.status(404).send({ message: 'Пользователь не найден' });
-    }
+const getUserById = (req, res) => {
+  User.findById(req.params.userId)
+    .then((userData) => {
+      if (!userData) {
+        return res.status(404).send({ message: 'Пользователь не найден' });
+      }
 
-    return res.status(200).send({ data: userData });
-  })
+      return res.status(200).send({ data: userData });
+    })
 
-  .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
-
+    .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
+};
 // запрос на создание пользователя
 const createUser = (req, res) => {
   const { name, about, avatar } = req.body;

@@ -5,9 +5,8 @@ const getCards = (req, res) => Card.find({})
   .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
 
 const deleteCard = (req, res) => {
-  const { cardId } = req.params;
+  Card.findByIdAndRemove(req.params.cardId)
 
-  Card.findByIdAndRemove(cardId)
     .then((cardData) => {
       if (!cardData) {
         return res.status(404).send({ message: 'Карточка с указанным _id не найдена' });
@@ -50,34 +49,22 @@ const likeCard = (req, res) => {
       }
       return res.status(200).send({ data: cardData });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send('Переданы некорректные данные для постановки лайка');
-      }
-      return res.status(500).send({ message: 'Ошибка сервера' });
-    });
+    .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
 };
 
 const dislikeCard = (req, res) => {
-  const { cardId } = req.params;
-
   Card.findByIdAndUpdate(
-    cardId,
+    req.params.cardId,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
     { new: true, runValidators: true },
   )
     .then((cardData) => {
-      if (!cardData) {
+      if (!req.params.cardId) {
         return res.status(404).send({ message: 'Передан несуществующий _id карточки' });
       }
       return res.status(200).send({ data: cardData });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send('Переданы некорректные данные для снятия лайка');
-      }
-      return res.status(500).send({ message: 'Ошибка сервера' });
-    });
+    .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
 };
 
 module.exports = {
