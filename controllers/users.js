@@ -45,7 +45,7 @@ const updateUser = (req, res) => {
     { new: true, runValidators: true },
   )
     .then((userData) => {
-      if (!req.user._id) {
+      if (!userData) {
         return res.status(404).send({ message: 'Пользователь не найден' });
       }
 
@@ -64,7 +64,7 @@ const updateAvatar = (req, res) => {
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
     .then((userData) => {
-      if (!req.user._id) {
+      if (!userData) {
         return res.status(404).send({ message: 'Пользователь не найден' });
       }
 
