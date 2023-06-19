@@ -1,7 +1,7 @@
 const User = require('../models/user');
 const {
   BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
-} = require('../errors/errors');
+} = require('../constants/errors');
 
 // запрос всех пользователей
 const getUsers = (req, res) => User.find({})
@@ -21,7 +21,7 @@ const getUserById = (req, res) => {
     })
 
     .catch((userData) => {
-      if (userData._id.length === 24) {
+      if (userData._id.length !== 24) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при поиске пользователя' });
         return;
       }

@@ -1,7 +1,7 @@
 const Card = require('../models/card');
 const {
   BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
-} = require('../errors/errors');
+} = require('../constants/errors');
 
 const getCards = (req, res) => Card.find({})
   .then((cards) => res.status(OK).send({ data: cards }))
@@ -17,7 +17,7 @@ const deleteCard = (req, res) => {
       return res.status(OK).send({ data: cardData });
     })
     .catch((cardData) => {
-      if (cardData._id.length === 24) {
+      if (cardData._id !== 24) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при удалении карточки' });
         return;
       }
@@ -58,7 +58,7 @@ const likeCard = (req, res) => {
       return res.status(OK).send({ data: cardData });
     })
     .catch((cardData) => {
-      if (cardData._id.length === 24) {
+      if (cardData._id !== 24) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
         return;
       }
@@ -80,7 +80,7 @@ const dislikeCard = (req, res) => {
       return res.status(OK).send({ data: cardData });
     })
     .catch((cardData) => {
-      if (cardData._id.length === 24) {
+      if (cardData._id !== 24) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для снятия лайка' });
         return;
       }

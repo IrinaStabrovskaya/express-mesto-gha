@@ -1,5 +1,9 @@
 const router = require('express').Router();
 const {
+  BAD_REQUEST,
+} = require('../constants/errors');
+
+const {
   getCards,
   deleteCard,
   createCard,
@@ -16,5 +20,7 @@ router.post('/', createCard);
 router.put('/:cardId/likes', likeCard);
 
 router.delete('/:cardId/likes', dislikeCard);
+
+router.use('/*', (req, res) => { res.status(BAD_REQUEST).send({ message: 'Некорректный путь' }); });
 
 module.exports = router;
