@@ -1,9 +1,12 @@
 const User = require('../models/user');
+const {
+  BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
+} = require('../errors/errors');
 
 // запрос всех пользователей
 const getUsers = (req, res) => User.find({})
-  .then((users) => res.status(200).send({ data: users }))
-  .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+  .then((users) => res.status(OK).send({ data: users }))
+  .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
 
 // запрос пользователя по id
 const getUserById = (req, res) => {
@@ -11,29 +14,34 @@ const getUserById = (req, res) => {
 
     .then((userData) => {
       if (!userData) {
-        res.status(404).send({ message: 'Пользователь не найден' });
+        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
         return;
       }
-
-      res.status(200).send({ data: userData });
+      res.status(OK).send({ data: userData });
     })
 
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((userData) => {
+      if (userData._id.length === 24) {
+        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при поиске пользователя' });
+        return;
+      }
+      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+    });
 };
 // запрос на создание пользователя
 const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
   User.create({ name, about, avatar })
-    .then((userData) => res.status(201).send({ data: userData }))
+    .then((userData) => res.status(CREATED).send({ data: userData }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400).send({
+        return res.status(BAD_REQUEST).send({
           message: 'Переданы некорректные данные при создании пользователя',
         });
       }
 
-      return res.status(500).send({ message: 'Ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка' });
     });
 };
 
@@ -48,21 +56,21 @@ const updateUser = (req, res) => {
   )
     .then((userData) => {
       if (!userData) {
-        res.status(404).send({ message: 'Пользователь не найден' });
+        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
         return;
       }
 
-      res.status(200).send({ data: userData });
+      res.status(OK).send({ data: userData });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return res
-          .status(400)
+          .status(BAD_REQUEST)
           .send({
             message: 'Переданы некорректные данные при обновлении профиля',
           });
       }
-      return res.status(500).send({ message: 'Ошибка сервера' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
     });
 };
 
@@ -72,20 +80,20 @@ const updateAvatar = (req, res) => {
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((userData) => {
       if (!userData) {
-        return res.status(404).send({ message: 'Пользователь не найден' });
+        return res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
       }
 
-      return res.status(200).send({ data: userData });
+      return res.status(OK).send({ data: userData });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return res
-          .status(400)
+          .status(BAD_REQUEST)
           .send({
             message: 'Переданы некорректные данные при обновлении профиля',
           });
       }
-      return res.status(500).send({ message: 'Ошибка сервера' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
     });
 };
 
