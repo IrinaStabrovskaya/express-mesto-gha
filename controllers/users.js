@@ -20,7 +20,7 @@ const getUserById = (req, res) => {
       res.status(OK).send({ data: userData });
     })
 
-    .catch((userData) => {console.log(userData._id)
+    .catch((userData) => {
       if (userData.length !== 24) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при поиске пользователя' });
         return;
