@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/user');
 const {
   BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
@@ -11,21 +12,20 @@ const getUsers = (req, res) => User.find({})
 // запрос пользователя по id
 const getUserById = (req, res) => {
   User.findById(req.params.userId)
-
+    .orFail(new Error('NotValidId'))
     .then((userData) => {
-      if (!userData) {
+      res.status(OK).send({ data: userData });
+    })
+    .catch((err) => {
+      if (err.message === 'NotValidId') {
         res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
         return;
       }
-      res.status(OK).send({ data: userData });
-    })
-
-    .catch((userData) => {
-      if (userData.length !== 24) {
+      if (err instanceof mongoose.Error.CastError) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при поиске пользователя' });
         return;
       }
-      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
     });
 };
 // запрос на создание пользователя
@@ -35,17 +35,17 @@ const createUser = (req, res) => {
   User.create({ name, about, avatar })
     .then((userData) => res.status(CREATED).send({ data: userData }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({
           message: 'Переданы некорректные данные при создании пользователя',
         });
       }
 
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
     });
 };
 
-// запрос на обновление аватара
+// функция запроса обновления данных пользователя
 const updateUser = (req, res) => {
   const { name, about } = req.body;
 
@@ -54,46 +54,50 @@ const updateUser = (req, res) => {
     { name, about },
     { new: true, runValidators: true },
   )
+    .orFail(new Error('NotValidId'))
     .then((userData) => {
-      if (!userData) {
-        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
-        return;
-      }
-
       res.status(OK).send({ data: userData });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res
+      if (err.message === 'NotValidId') {
+        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
+        return;
+      }
+      if (err instanceof mongoose.Error.ValidationError) {
+        res
           .status(BAD_REQUEST)
           .send({
             message: 'Переданы некорректные данные при обновлении профиля',
           });
+        return;
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
     });
 };
 
+// запрос на обновление аватара
 const updateAvatar = (req, res) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+    .orFail(new Error('NotValidId'))
     .then((userData) => {
-      if (!userData) {
-        return res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
-      }
-
-      return res.status(OK).send({ data: userData });
+      res.status(OK).send({ data: userData });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res
+      if (err.message === 'NotValidId') {
+        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
+        return;
+      }
+      if (err instanceof mongoose.Error.ValidationError) {
+        res
           .status(BAD_REQUEST)
           .send({
             message: 'Переданы некорректные данные при обновлении профиля',
           });
+        return;
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
     });
 };
 

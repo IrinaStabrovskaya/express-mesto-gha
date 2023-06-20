@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Card = require('../models/card');
 const {
   BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
@@ -16,8 +17,8 @@ const deleteCard = (req, res) => {
       }
       return res.status(OK).send({ data: cardData });
     })
-    .catch((cardData) => {
-      if (cardData._id !== 24) {
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при удалении карточки' });
         return;
       }
@@ -33,7 +34,7 @@ const createCard = (req, res) => {
   Card.create({ name, link, owner: id })
     .then((newCard) => res.status(CREATED).send({ data: newCard }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof mongoose.Error.ValidationError) {
         return res
           .status(BAD_REQUEST)
           .send({
@@ -49,16 +50,18 @@ const likeCard = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
-    { new: true, runValidators: true },
+    { new: true },
   )
+    .orFail(new Error('NotValidId'))
     .then((cardData) => {
-      if (!cardData) {
-        return res.status(NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
-      }
-      return res.status(OK).send({ data: cardData });
+      res.status(OK).send({ data: cardData });
     })
-    .catch((cardData) => {
-      if (cardData._id !== 24) {
+    .catch((err) => {
+      if (err.message === 'NotValidId') {
+        res.status(NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
+        return;
+      }
+      if (err instanceof mongoose.Error.CastError) {
         res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
         return;
       }
@@ -71,17 +74,19 @@ const dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
-    { new: true, runValidators: true },
+    { new: true },
   )
+    .orFail(new Error('NotValidId'))
     .then((cardData) => {
-      if (!cardData) {
-        return res.status(NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
-      }
-      return res.status(OK).send({ data: cardData });
+      res.status(OK).send({ data: cardData });
     })
-    .catch((cardData) => {
-      if (cardData._id !== 24) {
-        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для снятия лайка' });
+    .catch((err) => {
+      if (err.message === 'NotValidId') {
+        res.status(NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
+        return;
+      }
+      if (err instanceof mongoose.Error.CastError) {
+        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
         return;
       }
 
