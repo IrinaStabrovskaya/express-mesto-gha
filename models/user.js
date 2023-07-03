@@ -1,24 +1,56 @@
 const mongoose = require('mongoose');
+const isEmail = require('validator/lib/isEmail');
+const isLength = require('validator/lib/isLength');
+const isURL = require('validator/lib/isURL');
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
-      minlength: 2,
-      maxlength: 30,
+      default: 'Жак-Ив Кусто',
+      validate: {
+        validator: (String) => isLength(String, { min: 2, max: 30 }),
+        message: 'Имя должно содержать от 2 до 30 символов',
+      },
     },
     about: {
       type: String,
-      required: true,
-      minlength: 2,
-      maxlength: 30,
+      default: 'Исследователь',
+      validate: {
+        validator: (String) => isLength(String, { min: 2, max: 30 }),
+        message: 'Поле "О себе" должно содержать от 2 до 30 символов',
+      },
     },
     avatar: {
       type: String,
+      default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+      validate: {
+        validator: (String) => isURL(String),
+        message: 'Неверный формат URL-адреса',
+      },
+    },
+    email: {
+      type: String,
       required: true,
+      unique: true,
+      validate: {
+        validator: (v) => isEmail(v),
+        message: 'Неправильный формат почты',
+      },
+    },
+    password: {
+      type: String,
+      required: true,
+      select: false,
     },
   },
 );
+
+// eslint-disable-next-line func-names
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+};
 
 module.exports = mongoose.model('user', userSchema);

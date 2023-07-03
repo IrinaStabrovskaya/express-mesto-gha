@@ -1,17 +1,32 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+// const checkToken = require('../middlewares/auth');
 const {
   BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
 } = require('../constants/errors');
 
+const SALT_ROUNDS = 10;
+
+const JWT_SECRET = 'super-puper-secret-key';
+
 // запрос всех пользователей
-const getUsers = (req, res) => User.find({})
-  .then((users) => res.status(OK).send({ data: users }))
-  .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+const getUsers = (req, res) => {
+  if (!req.user) {
+    res.status(403).send({ message: 'Нет доступа' });
+  }
+  User.find({})
+    .then((users) => res.status(OK).send({ data: users }))
+    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+};
 
 // запрос пользователя по id
-const getUserById = (req, res) => {
-  User.findById(req.params.userId)
+const getUser = (req, res) => {
+  if (!req.user) {
+    res.status(403).send({ message: 'Нет доступа' });
+  }
+  User.findById(req.user)
     .orFail(new Error('NotValidId'))
     .then((userData) => {
       res.status(OK).send({ data: userData });
@@ -22,7 +37,7 @@ const getUserById = (req, res) => {
         return;
       }
       if (err instanceof mongoose.Error.CastError) {
-        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при поиске пользователя' });
+        res.status(BAD_REQUEST).send({ message: `'Переданы некорректные данные при поиске пользователя' ${err.name} ${err.message}` });
         return;
       }
       res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
@@ -30,18 +45,36 @@ const getUserById = (req, res) => {
 };
 // запрос на создание пользователя
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  if (!email || !password) {
+    res.status(BAD_REQUEST).send({ message: 'Не передан электоронный адрес или пароль' });
+  }
+  // ищем пользователя по email
+  //  если пользователя такого нет, то создаем
+  return User.findOne({ email })
 
-  User.create({ name, about, avatar })
-    .then((userData) => res.status(CREATED).send({ data: userData }))
-    .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(BAD_REQUEST).send({
-          message: 'Переданы некорректные данные при создании пользователя',
-        });
+    .then((user) => {
+      if (user) {
+        return res.status(409).send({ message: 'Пользователь уже существует' });
       }
 
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      return bcrypt.hash(password, SALT_ROUNDS)
+        .then((hash) => User.create({
+          name, about, avatar, email, password: hash,
+        }))
+
+        .then((userData) => {
+          res.status(CREATED).send({ data: userData });
+        });
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        res.status(BAD_REQUEST).send({
+          message: `'Переданы некорректные данные при создании пользователя' ${err.name} ${err.message}`,
+        });
+      }
     });
 };
 
@@ -101,10 +134,36 @@ const updateAvatar = (req, res) => {
     });
 };
 
+const login = (req, res) => {
+  const { email, password } = req.body;
+
+  User.findOne({ email }).select('+password')
+    .orFail(new Error('EmailNotFound'))
+    .then((user) => bcrypt.compare(password, user.password)
+      .then((matched) => {
+        if (!matched) {
+          Promise.reject(new Error('EmailNotFound'));
+          return;
+        }
+        // eslint-disable-next-line consistent-return
+        return res.status(OK).send({
+          token: jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' }),
+        });
+      }))
+    .catch((err) => {
+      if (err.message === 'EmailNotFound') {
+        res.status(401).send({ message: 'Неправильные почта или пароль' });
+        return;
+      }
+      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+    });
+};
+
 module.exports = {
   getUsers,
-  getUserById,
+  getUser,
   createUser,
   updateUser,
   updateAvatar,
+  login,
 };

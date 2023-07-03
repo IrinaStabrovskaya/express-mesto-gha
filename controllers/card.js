@@ -12,10 +12,15 @@ const deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
 
     .then((cardData) => {
-      if (!cardData) {
-        return res.status(NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена' });
+      if (!req.user) {
+        res.status(403).send({ message: 'Вы не можете удалить чужую карточку' });
+        return;
       }
-      return res.status(OK).send({ data: cardData });
+      if (!cardData) {
+        res.status(NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена' });
+        return;
+      }
+      res.status(OK).send({ data: cardData });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
@@ -49,7 +54,7 @@ const createCard = (req, res) => {
 const likeCard = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
-    { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
+    { $addToSet: { likes: req.user } }, // добавить _id в массив, если его там нет
     { new: true },
   )
     .orFail(new Error('NotValidId'))
@@ -62,7 +67,7 @@ const likeCard = (req, res) => {
         return;
       }
       if (err instanceof mongoose.Error.CastError) {
-        res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
+        res.status(BAD_REQUEST).send({ message: `'Переданы некорректные данные для постановки лайка' ${err.name} ${err.message}` });
         return;
       }
 
