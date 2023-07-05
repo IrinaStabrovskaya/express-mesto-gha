@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-// const auth = require('./middlewares/auth');
+const { errors } = require('celebrate');
+const errorHandler = require('./middlewares/error-handler');
 
 const routes = require('./routes/index');
 
@@ -12,5 +13,9 @@ mongoose.connect('mongodb://0.0.0.0:27017/mestodb');
 app.use(express.json());
 
 app.use(routes);
-// app.use(auth);
+
+app.use(errors());
+
+app.use(errorHandler);
+
 app.listen(PORT);

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const isEmail = require('validator/lib/isEmail');
 const isLength = require('validator/lib/isLength');
-const isURL = require('validator/lib/isURL');
+// const isURL = require('validator/lib/isURL');
 
 const userSchema = new mongoose.Schema(
   {
@@ -25,7 +25,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
       validate: {
-        validator: (String) => isURL(String),
+        // validator: (String) => isURL(String),
+        validator: (url) => /^(https?):\/\/(www\.)?([a-z0-9-]*)\.([a-z]{2,6})\/?(((([-._~:/?#[\]@!$&'()*+,;=]*)?)(\w*?))*)?#?/gim.test(url),
+
         message: 'Неверный формат URL-адреса',
       },
     },
@@ -46,6 +48,7 @@ const userSchema = new mongoose.Schema(
   },
 );
 
+// метод, который удаляет поле password из тела ответа
 // eslint-disable-next-line func-names
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();

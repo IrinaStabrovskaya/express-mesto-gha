@@ -2,9 +2,13 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-// const checkToken = require('../middlewares/auth');
+const BadRequest = require('../errors/bad-request');
+const Forbidden = require('../errors/forbidden');
+const Conflict = require('../errors/conflict');
+const Unauthorized = require('../errors/unauthorized');
+const NotFound = require('../errors/not-found');
 const {
-  BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND, OK, CREATED,
+  OK, CREATED,
 } = require('../constants/errors');
 
 const SALT_ROUNDS = 10;
@@ -12,19 +16,19 @@ const SALT_ROUNDS = 10;
 const JWT_SECRET = 'super-puper-secret-key';
 
 // запрос всех пользователей
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   if (!req.user) {
-    res.status(403).send({ message: 'Нет доступа' });
+    throw new Forbidden('Нет доступа');
   }
   User.find({})
     .then((users) => res.status(OK).send({ data: users }))
-    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
 // запрос пользователя по id
-const getUser = (req, res) => {
+const getUser = (req, res, next) => {
   if (!req.user) {
-    res.status(403).send({ message: 'Нет доступа' });
+    throw new Forbidden('Нет доступа');
   }
   User.findById(req.user)
     .orFail(new Error('NotValidId'))
@@ -33,53 +37,40 @@ const getUser = (req, res) => {
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
-        return;
+        return next(new NotFound('Пользователь не найден'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        res.status(BAD_REQUEST).send({ message: `'Переданы некорректные данные при поиске пользователя' ${err.name} ${err.message}` });
-        return;
+        return next(new BadRequest('Переданы некорректные данные при поиске пользователя'));
       }
-      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      return next(err);
     });
 };
 // запрос на создание пользователя
-const createUser = (req, res) => {
+const createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
   if (!email || !password) {
-    res.status(BAD_REQUEST).send({ message: 'Не передан электоронный адрес или пароль' });
+    throw new BadRequest('Не передан электоронный адрес или пароль');
   }
-  // ищем пользователя по email
-  //  если пользователя такого нет, то создаем
-  return User.findOne({ email })
 
-    .then((user) => {
-      if (user) {
-        return res.status(409).send({ message: 'Пользователь уже существует' });
-      }
-
-      return bcrypt.hash(password, SALT_ROUNDS)
-        .then((hash) => User.create({
-          name, about, avatar, email, password: hash,
-        }))
-
-        .then((userData) => {
-          res.status(CREATED).send({ data: userData });
-        });
+  return bcrypt.hash(password, SALT_ROUNDS)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
+    .then((userData) => {
+      res.status(CREATED).send({ data: userData });
     })
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        res.status(BAD_REQUEST).send({
-          message: `'Переданы некорректные данные при создании пользователя' ${err.name} ${err.message}`,
-        });
+      if (err.code === 11000) {
+        return next(new Conflict('Пользователь уже существует'));
       }
+      return next(err);
     });
 };
 
 // функция запроса обновления данных пользователя
-const updateUser = (req, res) => {
+const updateUser = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(
@@ -93,23 +84,17 @@ const updateUser = (req, res) => {
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
-        return;
+        return next(new NotFound('Пользователь не найден'));
       }
       if (err instanceof mongoose.Error.ValidationError) {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные при обновлении профиля',
-          });
-        return;
+        return next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
       }
-      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      return next(err);
     });
 };
 
 // запрос на обновление аватара
-const updateAvatar = (req, res) => {
+const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
@@ -119,22 +104,16 @@ const updateAvatar = (req, res) => {
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
-        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
-        return;
+        return next(new NotFound('Пользователь не найден'));
       }
       if (err instanceof mongoose.Error.ValidationError) {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные при обновлении профиля',
-          });
-        return;
+        return next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
       }
-      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      return next(err);
     });
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
 
   User.findOne({ email }).select('+password')
@@ -152,10 +131,9 @@ const login = (req, res) => {
       }))
     .catch((err) => {
       if (err.message === 'EmailNotFound') {
-        res.status(401).send({ message: 'Неправильные почта или пароль' });
-        return;
+        return next(new Unauthorized('Неправильные почта или пароль'));
       }
-      res.status(INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера' });
+      return next(err);
     });
 };
 

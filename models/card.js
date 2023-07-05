@@ -12,9 +12,8 @@ const cardSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    owner: {
-      type: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
-    },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+
     likes: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
       default: [],
