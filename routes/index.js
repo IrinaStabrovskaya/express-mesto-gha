@@ -11,17 +11,17 @@ const {
 
 router.use('/signup', celebrate({
   body: Joi.object().keys({
-    name: Joi.string().default().validate(),
-    about: Joi.string().default().validate(),
-    avatar: Joi.string().default().validate(),
-    email: Joi.string().required().unique().validate(),
-    password: Joi.string().required().select(),
+    name: Joi.string().default('Жак-Ив Кусто').validate(),
+    about: Joi.string().default('Исследователь').validate(),
+    avatar: Joi.string().default('https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png').validate(),
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
   }),
 }), createUser);
 router.use('/signin', celebrate({
   body: Joi.object().keys({
-    email: Joi.string().required().unique().validate(),
-    password: Joi.string().required().select(),
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
   }),
 }), login);
 router.use('/users', auth, userRoutes);
