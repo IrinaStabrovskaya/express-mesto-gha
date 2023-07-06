@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
       validate: {
         // validator: (String) => isURL(String),
-        validator: (url) => /^(https?):\/\/(www\.)?([a-z0-9-]*)\.([a-z]{2,6})\/?(((([-._~:/?#[\]@!$&'()*+,;=]*)?)(\w*?))*)?#?/gim.test(url),
+        validator: (url) => /^(https?):\/\/(www\.)?([a-z0-9-.]*)\/?(([-._~:/?#[\]@!$&'()*+,;=a-z0-9]*)?)#?/gim.test(url),
 
         message: 'Неверный формат URL-адреса',
       },
@@ -36,14 +36,20 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       email: {
-        validator: (email) => isEmail(email),
-        message: 'Неправильный формат почты',
+        minDomainSegments: 3,
+        tlds: { allow: ['com', 'net', 'ru'] },
+        validate: {
+          validator: (email) => isEmail(email),
+          message: 'Неправильный формат почты',
+        },
       },
+
     },
     password: {
       type: String,
       required: true,
       select: false,
+      minlength: 8,
     },
   },
 );
@@ -51,7 +57,8 @@ const userSchema = new mongoose.Schema(
 // метод, который удаляет поле password из тела ответа
 // eslint-disable-next-line func-names
 userSchema.methods.toJSON = function () {
-  const obj = this.toObject();
+  // eslint-disable-next-line no-var
+  var obj = this.toObject();
   delete obj.password;
   return obj;
 };

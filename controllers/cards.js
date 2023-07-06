@@ -3,24 +3,35 @@ const Card = require('../models/card');
 const BadRequest = require('../errors/bad-request');
 const Forbidden = require('../errors/forbidden');
 const NotFound = require('../errors/not-found');
+const Unauthorized = require('../errors/unauthorized');
 const {
   OK, CREATED,
 } = require('../constants/errors');
 
-const getCards = (req, res, next) => Card.find({})
-  .then((cards) => res.status(OK).send({ data: cards }))
-  .catch(next);
+const getCards = (req, res, next) => {
+  Card.find({})
+    .orFail('UserNotFound')
+    .then((cards) => {
+      res.status(OK).send({ data: cards });
+    })
+    .catch((err) => {
+      if (err.message === 'UserNotFound') {
+        return next(new Unauthorized('Нужна авторизация'));
+      }
+      return next(err);
+    });
+};
 
 // Удаление карточки
 const deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
 
     .then((cardData) => {
-      if (!req.user) {
-        throw new Forbidden('Вы не можете удалить чужую карточку');
-      }
       if (!cardData) {
         throw new NotFound('Карточка с указанным _id не найдена');
+      }
+      if (cardData.owner !== req.user._id) {
+        throw new Forbidden('Вы не можете удалить чужую карточку');
       }
       res.status(OK).send({ data: cardData });
     })

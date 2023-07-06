@@ -17,7 +17,7 @@ const JWT_SECRET = 'super-puper-secret-key';
 
 // запрос всех пользователей
 const getUsers = (req, res, next) => {
-  if (!req.user) {
+  if (!req.headers.token) {
     throw new Forbidden('Нет доступа');
   }
   User.find({})
@@ -48,17 +48,17 @@ const getUser = (req, res, next) => {
 // запрос на создание пользователя
 const createUser = (req, res, next) => {
   const {
-    name, about, avatar, email, password,
+    email, password,
   } = req.body;
-  if (!email || !password) {
-    throw new BadRequest('Не передан электоронный адрес или пароль');
-  }
 
   return bcrypt.hash(password, SALT_ROUNDS)
     .then((hash) => User.create({
-      name, about, avatar, email, password: hash,
+      email, password: hash,
     }))
     .then((userData) => {
+      if (!email || !password) {
+        throw new BadRequest('Не передан электоронный адрес или пароль');
+      }
       res.status(CREATED).send({ data: userData });
     })
     .catch((err) => {
@@ -121,8 +121,7 @@ const login = (req, res, next) => {
     .then((user) => bcrypt.compare(password, user.password)
       .then((matched) => {
         if (!matched) {
-          Promise.reject(new Error('EmailNotFound'));
-          return;
+          throw new Unauthorized('Неправильные почта или пароль');
         }
         // eslint-disable-next-line consistent-return
         return res.status(OK).send({
