@@ -8,14 +8,28 @@ const {
   updateAvatar,
 } = require('../controllers/users');
 
-router.get('/', getUsers);
+router.get(
+  '/',
+  celebrate({
+    headers: Joi.object().keys({
+      authorization: Joi.string().required(),
+    }).unknown(true),
+  }),
+  getUsers,
+);
 
-router.get('/me', getUser);
+router.get('/me', celebrate({
+  headers: Joi.object().keys({
+    authorization: Joi.string().required(),
+  }).unknown(true),
+}), getUser);
 
 router.patch('/me', celebrate({
   body: Joi.object().keys({
-    name: Joi.string().default('Жак-Ив Кусто').validate(),
-    about: Joi.string().default('Исследователь').validate(),
+    name: Joi.string().default('Жак-Ив Кусто') // .min(2).max(30)
+      .validate(),
+    about: Joi.string().default('Исследователь') // .min(2).max(30)
+      .validate(),
   }),
 
 }), updateUser);

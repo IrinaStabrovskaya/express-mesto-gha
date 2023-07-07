@@ -17,12 +17,18 @@ const JWT_SECRET = 'super-puper-secret-key';
 
 // запрос всех пользователей
 const getUsers = (req, res, next) => {
-  if (!req.headers.token) {
-    throw new Forbidden('Нет доступа');
-  }
   User.find({})
+    .orFail(new Error('NotFoundUsers'))
     .then((users) => res.status(OK).send({ data: users }))
-    .catch(next);
+    .catch((err) => {
+      if (err.message === 'NotFoundUsers') {
+        return next(new NotFound('Пользователи не найдены'));
+      }
+      if (err instanceof mongoose.Error.CastError) {
+        return next(new BadRequest('Переданы некорректные данные при поиске пользователя'));
+      }
+      return next(err);
+    });
 };
 
 // запрос пользователя по id
