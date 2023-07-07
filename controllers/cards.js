@@ -3,20 +3,23 @@ const Card = require('../models/card');
 const BadRequest = require('../errors/bad-request');
 const Forbidden = require('../errors/forbidden');
 const NotFound = require('../errors/not-found');
-const Unauthorized = require('../errors/unauthorized');
+// const Unauthorized = require('../errors/unauthorized');
 const {
   OK, CREATED,
 } = require('../constants/errors');
 
 const getCards = (req, res, next) => {
+  if (!req.user) {
+    throw new Forbidden('Нет доступа');
+  }
   Card.find({})
-    .orFail('UserNotFound')
+    .orFail(() => new Error('CardsNotFound'))
     .then((cards) => {
       res.status(OK).send({ data: cards });
     })
     .catch((err) => {
-      if (err.message === 'UserNotFound') {
-        return next(new Unauthorized('Нужна авторизация'));
+      if (err.message === 'CardsNotFound') {
+        return next(new NotFound('Нет данных'));
       }
       return next(err);
     });
