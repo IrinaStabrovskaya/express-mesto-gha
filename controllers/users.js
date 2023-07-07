@@ -31,13 +31,25 @@ const getUsers = (req, res, next) => {
     });
 };
 
-// запрос пользователя по id
+// запрос своих данных
 const getUser = (req, res, next) => {
   if (!req.user) {
     throw new Forbidden('Нет доступа');
   }
-  User.findById(req.user)
-    .orFail(new Error('NotValidId'))
+  User.findOne({ _id: req.user._id })
+    .then((userData) => res.status(OK).send({ data: userData }))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        return next(new BadRequest('Переданы некорректные данные при поиске пользователя'));
+      }
+      return next(err);
+    });
+};
+
+// запрос пользователя по id
+const getUserById = (req, res, next) => {
+  User.findById(req.params.userId)
+    .orFail(() => new Error('NotValidId'))
     .then((userData) => {
       res.status(OK).send({ data: userData });
     })
@@ -120,7 +132,7 @@ const updateAvatar = (req, res, next) => {
         return next(new NotFound('Пользователь не найден'));
       }
       if (err instanceof mongoose.Error.ValidationError) {
-        return next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
+        return next(new BadRequest(`'Переданы некорректные данные при обновлении профиля' ${err.name} ${err.message}`));
       }
       return next(err);
     });
@@ -151,6 +163,7 @@ const login = (req, res, next) => {
 module.exports = {
   getUsers,
   getUser,
+  getUserById,
   createUser,
   updateUser,
   updateAvatar,
