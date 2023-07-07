@@ -1,5 +1,9 @@
 const router = require('express').Router();
-const { celebrate, Joi } = require('celebrate');
+
+const {
+  validateUpdateUser,
+  validateUpdateAvatar,
+} = require('../utils/validateJoiSchema');
 
 const {
   getUsers,
@@ -10,34 +14,13 @@ const {
 
 router.get(
   '/',
-  celebrate({
-    headers: Joi.object().keys({
-      authorization: Joi.string().required(),
-    }).unknown(true),
-  }),
   getUsers,
 );
 
-router.get('/me', celebrate({
-  headers: Joi.object().keys({
-    authorization: Joi.string().required(),
-  }).unknown(true),
-}), getUser);
+router.get('/me', getUser);
 
-router.patch('/me', celebrate({
-  body: Joi.object().keys({
-    name: Joi.string().default('Жак-Ив Кусто') // .min(2).max(30)
-      .validate(),
-    about: Joi.string().default('Исследователь') // .min(2).max(30)
-      .validate(),
-  }),
+router.patch('/me', validateUpdateUser, updateUser);
 
-}), updateUser);
-
-router.patch('/me/avatar', celebrate({
-  body: Joi.object().keys({
-    avatar: Joi.string().default('https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png').validate(),
-  }),
-}), updateAvatar);
+router.patch('/me/avatar', validateUpdateAvatar, updateAvatar);
 
 module.exports = router;

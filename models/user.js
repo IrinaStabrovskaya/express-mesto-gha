@@ -2,6 +2,8 @@
 const mongoose = require('mongoose');
 const isEmail = require('validator/lib/isEmail');
 const isLength = require('validator/lib/isLength');
+
+const urlPattern = /^(https?):\/\/(www\.)?([a-z0-9-.]*)\/?(([-._~:/?#[\]@!$&'()*+,;=a-z0-9]*)?)#?$/gmi;
 // const isURL = require('validator/lib/isURL');
 
 const userSchema = new mongoose.Schema(
@@ -9,35 +11,27 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       default: 'Жак-Ив Кусто',
-      minlength: 2,
-      maxlength: 30,
       validate: {
-        validator: (String) => isLength(String, { min: 2, max: 30 }),
+        validator: (string) => isLength(string, { min: 2, max: 30 }),
         message: 'Имя должно содержать от 2 до 30 символов',
       },
     },
     about: {
       type: String,
       default: 'Исследователь',
-      minlength: 2,
-      maxlength: 30,
       validate: {
-        validator: (String) => isLength(String, { min: 2, max: 30 }),
-        message: 'Поле "О себе" должно содержать от 2 до 30 символов',
+        validator: (string) => isLength(string, { min: 2, max: 30 }),
+        message: 'Это поле должно содержать от 2 до 30 символов',
       },
     },
     avatar: {
       type: String,
-      default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+      required: true,
       validate: {
-        validator(value) {
-          const pattern = /^(https?):\/\/(www\.)?([a-z0-9-.]*)\/?(([-._~:/?#[\]@!$&'()*+,;=a-z0-9]*)?)#?$/;
-          const RegExp = new RegExp(pattern);
-          return value.match(RegExp);
-        },
-
-        message: 'Неверный формат URL-адреса',
+        validator: (url) => urlPattern.test(url)('Неверный формат URL-адреса'),
       },
+
+      default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
     },
     email: {
       type: String,

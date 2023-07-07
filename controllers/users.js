@@ -54,12 +54,16 @@ const getUser = (req, res, next) => {
 // запрос на создание пользователя
 const createUser = (req, res, next) => {
   const {
-    email, password,
+    name, about, avatar, email, password,
   } = req.body;
 
   return bcrypt.hash(password, SALT_ROUNDS)
     .then((hash) => User.create({
-      email, password: hash,
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
     }))
     .then((userData) => {
       if (!email || !password) {
@@ -106,6 +110,9 @@ const updateAvatar = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .orFail(new Error('NotValidId'))
     .then((userData) => {
+      if (!avatar) {
+        throw new BadRequest('Ссылка не передана');
+      }
       res.status(OK).send({ data: userData });
     })
     .catch((err) => {
@@ -129,7 +136,6 @@ const login = (req, res, next) => {
         if (!matched) {
           throw new Unauthorized('Неправильные почта или пароль');
         }
-        // eslint-disable-next-line consistent-return
         return res.status(OK).send({
           token: jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' }),
         });
