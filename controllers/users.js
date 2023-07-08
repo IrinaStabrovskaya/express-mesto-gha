@@ -17,6 +17,9 @@ const JWT_SECRET = 'super-puper-secret-key';
 
 // запрос всех пользователей
 const getUsers = (req, res, next) => {
+  if (!req.user) {
+    throw new Forbidden('Нет доступа');
+  }
   User.find({})
     .orFail(new Error('NotFoundUsers'))
     .then((users) => res.status(OK).send({ data: users }))
@@ -33,7 +36,7 @@ const getUsers = (req, res, next) => {
 
 // запрос своих данных
 const getUser = (req, res, next) => {
-  if (!req.user) {
+  if (!req.params.userId) {
     throw new Forbidden('Нет доступа');
   }
   User.findOne({ _id: req.user._id })
