@@ -1,23 +1,23 @@
 const { celebrate, Joi } = require('celebrate');
 
 // eslint-disable-next-line max-len
-const urlPattern = /^(https?):\/\/(www\.)?([a-z0-9-.]*)\/?(([-._~:/?#[\]@!$&'()*+,;=a-z0-9]*)?)#?$/;
+const urlPattern = /^(https?):\/\/(www\.)?([a-z0-9-]{2,})\.([a-z0-9-]{2,})\.?([a-z0-9-]{2,})?\/?(([-._~:/?#[\]@!$&'()*+,;=a-zA-Z0-9]*)?)#?$/;
 
 const validateCreateUser = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().default('Жак-Ив Кусто').min(2).max(30),
-    about: Joi.string().default('Исследователь').min(2).max(30),
-    avatar: Joi.string().default('https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png').pattern(urlPattern),
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().pattern(urlPattern),
     email: Joi.string().required().email(),
     password: Joi.string().required().min(8),
-  }).unknown(true),
+  }),
 });
 
 const validateLogin = celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().min(8),
-  }).unknown(true),
+  }),
 });
 
 const validateUserId = celebrate({
@@ -28,9 +28,9 @@ const validateUserId = celebrate({
 
 const validateUpdateUser = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().default('Жак-Ив Кусто').min(2).max(30),
-    about: Joi.string().default('Исследователь').min(2).max(30),
-  }).unknown(true),
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+  }),
 });
 
 const validateUpdateAvatar = celebrate({
@@ -49,7 +49,7 @@ const validateDeleteCard = celebrate({
 const validateCreateCard = celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required(),
+    link: Joi.string().required().pattern(urlPattern),
   }),
 });
 

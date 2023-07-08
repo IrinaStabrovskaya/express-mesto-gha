@@ -38,8 +38,6 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       email: {
-        minDomainSegments: 3,
-        tlds: { allow: ['com', 'net', 'ru'] },
         validate: {
           validator: (email) => isEmail(email),
           message: 'Неправильный формат почты',
@@ -51,7 +49,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       select: false,
-      minlength: 8,
     },
   },
 );

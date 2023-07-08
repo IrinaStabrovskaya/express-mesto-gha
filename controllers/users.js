@@ -3,12 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const BadRequest = require('../errors/bad-request');
-const Forbidden = require('../errors/forbidden');
+// const Forbidden = require('../errors/forbidden');
 const Conflict = require('../errors/conflict');
 const Unauthorized = require('../errors/unauthorized');
 const NotFound = require('../errors/not-found');
 const {
-  OK, CREATED,
+  CREATED,
 } = require('../constants/errors');
 
 const SALT_ROUNDS = 10;
@@ -17,16 +17,9 @@ const JWT_SECRET = 'super-puper-secret-key';
 
 // запрос всех пользователей
 const getUsers = (req, res, next) => {
-  if (!req.user) {
-    throw new Forbidden('Нет доступа');
-  }
   User.find({})
-    .orFail(() => new Error('NotFoundUsers'))
-    .then((users) => res.status(OK).send({ data: users }))
+    .then((users) => res.send({ data: users }))
     .catch((err) => {
-      if (err.message === 'NotFoundUsers') {
-        return next(new NotFound('Пользователи не найдены'));
-      }
       if (err instanceof mongoose.Error.CastError) {
         return next(new BadRequest('Переданы некорректные данные при поиске пользователей'));
       }
@@ -36,11 +29,8 @@ const getUsers = (req, res, next) => {
 
 // запрос своих данных
 const getUser = (req, res, next) => {
-  if (!req.user._id) {
-    throw new Forbidden('Нет доступа');
-  }
   User.findOne({ _id: req.user._id })
-    .then((userData) => res.status(OK).send({ data: userData }))
+    .then((userData) => res.send({ data: userData }))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
         return next(new BadRequest('Переданы некорректные данные при поиске пользователя'));
@@ -51,13 +41,10 @@ const getUser = (req, res, next) => {
 
 // запрос пользователя по id
 const getUserById = (req, res, next) => {
-  if (!req.user._id) {
-    throw new Forbidden('Нет доступа');
-  }
   User.findById(req.params.userId)
     .orFail(() => new Error('NotValidId'))
     .then((userData) => {
-      res.status(OK).send({ data: userData });
+      res.send({ data: userData });
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
@@ -85,9 +72,6 @@ const createUser = (req, res, next) => {
       password: hash,
     }))
     .then((userData) => {
-      if (!email || !password) {
-        throw new BadRequest('Не передан электоронный адрес или пароль');
-      }
       res.status(CREATED).send({ data: userData });
     })
     .catch((err) => {
@@ -109,7 +93,7 @@ const updateUser = (req, res, next) => {
   )
     .orFail(() => new Error('NotValidId'))
     .then((userData) => {
-      res.status(OK).send({ data: userData });
+      res.send({ data: userData });
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
@@ -132,7 +116,7 @@ const updateAvatar = (req, res, next) => {
       if (!avatar) {
         throw new BadRequest('Ссылка не передана');
       }
-      res.status(OK).send({ data: userData });
+      res.send({ data: userData });
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
@@ -155,7 +139,7 @@ const login = (req, res, next) => {
         if (!matched) {
           throw new Unauthorized('Неправильные почта или пароль');
         }
-        return res.status(OK).send({
+        return res.send({
           token: jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' }),
         });
       }))

@@ -3,37 +3,29 @@ const Card = require('../models/card');
 const BadRequest = require('../errors/bad-request');
 const Forbidden = require('../errors/forbidden');
 const NotFound = require('../errors/not-found');
-const { OK, CREATED } = require('../constants/errors');
+const { CREATED } = require('../constants/errors');
 
 const getCards = (req, res, next) => {
-  if (!req.user) {
-    throw new Forbidden('Нет доступа');
-  }
   Card.find({})
-    .orFail(() => new Error('CardsNotFound'))
     .then((cards) => {
-      res.status(OK).send({ data: cards });
+      res.send({ data: cards });
     })
-    .catch((err) => {
-      if (err.message === 'CardsNotFound') {
-        return next(new NotFound('Нет данных'));
-      }
-      return next(err);
-    });
+    .catch((err) => next(err));
 };
 
 // Удаление карточки
 const deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
-
+  Card.findById(req.params.cardId)
     .then((cardData) => {
       if (!cardData) {
         throw new NotFound('Карточка с указанным _id не найдена');
       }
-      if (cardData.owner !== req.user._id) {
+      if (!cardData.owner.equals(req.user._id)) {
         throw new Forbidden('Вы не можете удалить чужую карточку');
       }
-      res.status(OK).send({ data: cardData });
+      Card.deleteOne()
+        .then(() => res.send({ data: cardData }))
+        .catch(next);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
@@ -71,7 +63,7 @@ const likeCard = (req, res, next) => {
   )
     .orFail(() => new Error('NotValidId'))
     .then((cardData) => {
-      res.status(OK).send({ data: cardData });
+      res.send({ data: cardData });
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
@@ -95,7 +87,7 @@ const dislikeCard = (req, res, next) => {
   )
     .orFail(() => new Error('NotValidId'))
     .then((cardData) => {
-      res.status(OK).send({ data: cardData });
+      res.send({ data: cardData });
     })
     .catch((err) => {
       if (err.message === 'NotValidId') {
