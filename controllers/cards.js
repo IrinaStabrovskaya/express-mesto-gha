@@ -3,10 +3,7 @@ const Card = require('../models/card');
 const BadRequest = require('../errors/bad-request');
 const Forbidden = require('../errors/forbidden');
 const NotFound = require('../errors/not-found');
-// const Unauthorized = require('../errors/unauthorized');
-const {
-  OK, CREATED,
-} = require('../constants/errors');
+const { OK, CREATED } = require('../constants/errors');
 
 const getCards = (req, res, next) => {
   if (!req.user) {
@@ -40,7 +37,9 @@ const deleteCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return next(new BadRequest('Переданы некорректные данные при удалении карточки'));
+        return next(
+          new BadRequest('Переданы некорректные данные при удалении карточки'),
+        );
       }
       return next(err);
     });
@@ -55,7 +54,9 @@ const createCard = (req, res, next) => {
     .then((newCard) => res.status(CREATED).send({ data: newCard }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return next(new BadRequest('Переданы некорректные данные при создании карточки'));
+        return next(
+          new BadRequest('Переданы некорректные данные при создании карточки'),
+        );
       }
       return next(err);
     });
@@ -68,7 +69,7 @@ const likeCard = (req, res, next) => {
     { $addToSet: { likes: req.user } }, // добавить _id в массив, если его там нет
     { new: true },
   )
-    .orFail(new Error('NotValidId'))
+    .orFail(() => new Error('NotValidId'))
     .then((cardData) => {
       res.status(OK).send({ data: cardData });
     })
@@ -77,7 +78,9 @@ const likeCard = (req, res, next) => {
         return next(new NotFound('Передан несуществующий _id карточки'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return next(new BadRequest('Переданы некорректные данные для постановки лайка'));
+        return next(
+          new BadRequest('Переданы некорректные данные для постановки лайка'),
+        );
       }
       return next(err);
     });
@@ -90,7 +93,7 @@ const dislikeCard = (req, res, next) => {
     { $pull: { likes: req.user._id } }, // убрать _id из массива
     { new: true },
   )
-    .orFail(new Error('NotValidId'))
+    .orFail(() => new Error('NotValidId'))
     .then((cardData) => {
       res.status(OK).send({ data: cardData });
     })
@@ -99,7 +102,9 @@ const dislikeCard = (req, res, next) => {
         return next(new NotFound('Передан несуществующий _id карточки'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return next(new BadRequest('Переданы некорректные данные для удаления лайка'));
+        return next(
+          new BadRequest('Переданы некорректные данные для удаления лайка'),
+        );
       }
       return next(err);
     });

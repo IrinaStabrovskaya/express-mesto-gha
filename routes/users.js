@@ -4,7 +4,6 @@ const {
   validateUpdateUser,
   validateUpdateAvatar,
   validateUserId,
-  validateIsToken,
 } = require('../utils/validateJoiSchema');
 
 const {
@@ -15,9 +14,9 @@ const {
   updateAvatar,
 } = require('../controllers/users');
 
-router.get('/', validateIsToken, getUsers);
+router.get('/', getUsers);
 
-router.get('/me', validateIsToken, getUser);
+router.get('/me', getUser);
 
 router.get('/:userId', validateUserId, getUserById);
 

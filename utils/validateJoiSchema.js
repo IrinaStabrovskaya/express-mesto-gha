@@ -22,21 +22,15 @@ const validateLogin = celebrate({
 
 const validateUserId = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().length(24).hex().required(),
+    userId: Joi.string().length(24).hex().required(),
   }),
-});
-
-const validateIsToken = celebrate({
-  headers: Joi.object().keys({
-    authorization: Joi.string().required(),
-  }).unknown(true),
 });
 
 const validateUpdateUser = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().default('Жак-Ив Кусто').validate(),
-    about: Joi.string().default('Исследователь').validate(),
-  }),
+    name: Joi.string().default('Жак-Ив Кусто').min(2).max(30),
+    about: Joi.string().default('Исследователь').min(2).max(30),
+  }).unknown(true),
 });
 
 const validateUpdateAvatar = celebrate({
@@ -80,6 +74,5 @@ module.exports = {
   validateCreateCard,
   validateLikeCard,
   validateDislikeCard,
-  validateIsToken,
   validateUserId,
 };

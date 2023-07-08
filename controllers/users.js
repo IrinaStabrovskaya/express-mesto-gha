@@ -21,14 +21,14 @@ const getUsers = (req, res, next) => {
     throw new Forbidden('Нет доступа');
   }
   User.find({})
-    .orFail(new Error('NotFoundUsers'))
+    .orFail(() => new Error('NotFoundUsers'))
     .then((users) => res.status(OK).send({ data: users }))
     .catch((err) => {
       if (err.message === 'NotFoundUsers') {
         return next(new NotFound('Пользователи не найдены'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return next(new BadRequest('Переданы некорректные данные при поиске пользователя'));
+        return next(new BadRequest('Переданы некорректные данные при поиске пользователей'));
       }
       return next(err);
     });
@@ -51,6 +51,9 @@ const getUser = (req, res, next) => {
 
 // запрос пользователя по id
 const getUserById = (req, res, next) => {
+  if (!req.user._id) {
+    throw new Forbidden('Нет доступа');
+  }
   User.findById(req.params.userId)
     .orFail(() => new Error('NotValidId'))
     .then((userData) => {
@@ -66,6 +69,7 @@ const getUserById = (req, res, next) => {
       return next(err);
     });
 };
+
 // запрос на создание пользователя
 const createUser = (req, res, next) => {
   const {
@@ -103,7 +107,7 @@ const updateUser = (req, res, next) => {
     { name, about },
     { new: true, runValidators: true },
   )
-    .orFail(new Error('NotValidId'))
+    .orFail(() => new Error('NotValidId'))
     .then((userData) => {
       res.status(OK).send({ data: userData });
     })
@@ -123,7 +127,7 @@ const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .orFail(new Error('NotValidId'))
+    .orFail(() => new Error('NotValidId'))
     .then((userData) => {
       if (!avatar) {
         throw new BadRequest('Ссылка не передана');
@@ -145,7 +149,7 @@ const login = (req, res, next) => {
   const { email, password } = req.body;
 
   User.findOne({ email }).select('+password')
-    .orFail(new Error('EmailNotFound'))
+    .orFail(() => new Error('EmailNotFound'))
     .then((user) => bcrypt.compare(password, user.password)
       .then((matched) => {
         if (!matched) {
