@@ -36,7 +36,7 @@ const getUsers = (req, res, next) => {
 
 // запрос своих данных
 const getUser = (req, res, next) => {
-  if (!req.params.userId) {
+  if (!req.user._id) {
     throw new Forbidden('Нет доступа');
   }
   User.findOne({ _id: req.user._id })

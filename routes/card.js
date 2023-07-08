@@ -5,7 +5,7 @@ const {
   validateCreateCard,
   validateLikeCard,
   validateDislikeCard,
-  validateUserId,
+  validateIsToken,
 } = require('../utils/validateJoiSchema');
 
 const {
@@ -16,7 +16,7 @@ const {
   dislikeCard,
 } = require('../controllers/cards');
 
-router.get('/', validateUserId, getCards);
+router.get('/', validateIsToken, getCards);
 
 router.delete('/:cardId', validateDeleteCard, deleteCard);
 
