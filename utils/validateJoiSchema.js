@@ -1,7 +1,7 @@
 const { celebrate, Joi } = require('celebrate');
 
-// eslint-disable-next-line max-len
-const urlPattern = /^(https?):\/\/(www\.)?([a-z0-9-]{2,})\.([a-z0-9-]{2,})\.?([a-z0-9-]{2,})?\/?(([-._~:/?#[\]@!$&'()*+,;=a-zA-Z0-9]*)?)#?$/;
+// eslint-disable-next-line max-len, no-useless-escape
+const urlPattern = /^(https?):\/\/(www\.)?([a-z0-9-]{2,})\.([a-z0-9-]{2,})\.?([a-z0-9-]{2,})?\/?(([-._~:\/?#[\]@!$&'()*+,;=a-zA-Z0-9]*)?)#?$/;
 
 const validateCreateUser = celebrate({
   body: Joi.object().keys({
